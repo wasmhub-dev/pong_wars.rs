@@ -5,8 +5,7 @@ use gloo::utils::{document, window};
 use web_sys::HtmlCanvasElement;
 
 mod pong_wars;
-use pong_wars::PongWars;
-
+use pong_wars::{Draw, PongWars};
 
 #[wasm_bindgen(main)]
 pub fn main() {
@@ -18,20 +17,25 @@ pub fn main() {
     let score_element = document()
         .get_element_by_id("score").unwrap();
 
-    let mut pong_wars = PongWars::new(canvas, score_element);
+    let pong_wars = PongWars::new(canvas, score_element);
+
+    recursive_draw(pong_wars);
+}
+
+fn recursive_draw(mut pong_wars: impl Draw + 'static) {
 
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
 
     *g.borrow_mut() = Some(Closure::new(move || {
         pong_wars.draw();
-        request_animation_frame(f.borrow().as_ref().unwrap());
+        request_animation_frame_safe(f.borrow().as_ref().unwrap());
     }));
 
-    request_animation_frame(g.borrow().as_ref().unwrap());
+    request_animation_frame_safe(g.borrow().as_ref().unwrap());
 }
 
-fn request_animation_frame(f: &Closure<dyn FnMut()>) {
+fn request_animation_frame_safe(f: &Closure<dyn FnMut()>) {
     window()
         .request_animation_frame(f.as_ref().unchecked_ref())
         .expect("should register `requestAnimationFrame` OK");

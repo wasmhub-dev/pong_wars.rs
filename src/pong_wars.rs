@@ -12,6 +12,12 @@ const COLOR_NOCTURNAL_EXPEDITION: &'static str = "#114C5A";
 const COLOR_OCEANIC_NOIR: &'static str = "#172B36";
 const SQUARE_SIZE: usize = 25;
 
+
+pub trait Draw {
+    fn draw(&mut self);
+}
+
+#[derive(Clone, Debug)]
 pub struct PongWars {
     canvas: HtmlCanvasElement,
     ctx: CanvasRenderingContext2d,
@@ -174,8 +180,10 @@ impl PongWars {
 
         (dx, dy)
     }
+}
 
-    pub fn draw(&mut self) {
+impl Draw for PongWars {
+    fn draw(&mut self) {
         self.ctx.clear_rect(0f64, 0f64, self.canvas.width() as f64, self.canvas.height() as f64);
         self.draw_squares();
 
