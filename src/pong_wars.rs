@@ -1,8 +1,9 @@
 #![allow(dead_code)]
-
+use gloo::utils::document;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d, Element};
 use wasm_bindgen::prelude::*;
 use core::f64::consts::PI;
+use crate::animation::Draw;
 
 const COLOR_ARCTIC_POWDER: &'static str = "#F1F6F4";
 const COLOR_MYSTIC_MINT: &'static str = "#D9E8E3";
@@ -11,11 +12,6 @@ const COLOR_DEEP_SAFRON: &'static str = "#FF9932";
 const COLOR_NOCTURNAL_EXPEDITION: &'static str = "#114C5A";
 const COLOR_OCEANIC_NOIR: &'static str = "#172B36";
 const SQUARE_SIZE: usize = 25;
-
-
-pub trait Draw {
-    fn draw(&mut self);
-}
 
 #[derive(Clone, Debug)]
 pub struct PongWars {
@@ -44,7 +40,15 @@ pub struct PongWars {
 }
 
 impl PongWars {
-    pub fn new(canvas: HtmlCanvasElement, score_element: Element) -> Self {
+    pub fn new() -> Self {
+        let canvas = document()
+            .get_element_by_id("pongCanvas")
+            .unwrap()
+            .dyn_into::<HtmlCanvasElement>().unwrap();
+
+        let score_element = document()
+            .get_element_by_id("score").unwrap();
+
         let ctx = canvas.get_context("2d").unwrap().unwrap()
             .dyn_into::<CanvasRenderingContext2d>()
             .unwrap();
