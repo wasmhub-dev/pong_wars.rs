@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d, Element};
 use wasm_bindgen::prelude::*;
 use core::f64::consts::PI;
@@ -9,11 +11,6 @@ const COLOR_DEEP_SAFRON: &'static str = "#FF9932";
 const COLOR_NOCTURNAL_EXPEDITION: &'static str = "#114C5A";
 const COLOR_OCEANIC_NOIR: &'static str = "#172B36";
 const SQUARE_SIZE: usize = 25;
-
-struct PositionDiff {
-    dx: f64,
-    dy: f64
-}
 
 pub struct PongWars {
     canvas: HtmlCanvasElement,
@@ -119,7 +116,7 @@ impl PongWars {
         }
     }
 
-    fn update_square_and_bounce(&mut self, x: f64, y: f64, dx: f64, dy: f64, color: &'static str) -> PositionDiff {
+    fn update_square_and_bounce(&mut self, x: f64, y: f64, dx: f64, dy: f64, color: &'static str) -> (f64, f64) {
         let mut updated_dx = dx;
         let mut updated_dy = dy;
         let mut angle = 0f64;
@@ -130,7 +127,7 @@ impl PongWars {
             let i = (check_x / SQUARE_SIZE as f64).floor() as usize;
             let j = (check_y / SQUARE_SIZE as f64).floor() as usize;
 
-            if i >= 0 && i < self.num_squares_x && j >= 0 && j < self.num_squares_y {
+            if i < self.num_squares_x && j < self.num_squares_y {
                 if self.squares[i][j] != color {
                     self.squares[i][j] = color;
 
@@ -145,10 +142,7 @@ impl PongWars {
             angle += PI / 4f64;
         }
 
-        PositionDiff {
-            dx: updated_dx,
-            dy: updated_dy
-        }
+        (updated_dx, updated_dy)
     }
 
     fn update_score_element(&self) {
@@ -167,7 +161,7 @@ impl PongWars {
         self.score_element.set_text_content(Some(score.as_str()));
     }
 
-    fn check_boundary_collision(&mut self, x: f64, y: f64, dx: f64, dy: f64) -> PositionDiff {
+    fn check_boundary_collision(&mut self, x: f64, y: f64, dx: f64, dy: f64) -> (f64, f64) {
         let mut dx = dx;
         let mut dy = dy;
         if x as f64 + dx > self.canvas.width() as f64 - SQUARE_SIZE as f64 / 2f64 || x as f64 + dx < SQUARE_SIZE as f64 / 2f64 {
@@ -178,10 +172,7 @@ impl PongWars {
             dy = -dy;
         }
 
-        PositionDiff {
-            dx: dx,
-            dy: dy
-        }
+        (dx, dy)
     }
 
     pub fn draw(&mut self) {
@@ -190,21 +181,21 @@ impl PongWars {
 
         self.draw_ball(self.x1, self.y1, self.day_ball_color);
         let bounce1 = self.update_square_and_bounce(self.x1, self.y1, self.dx1, self.dy1, self.day_color);
-        self.dx1 = bounce1.dx;
-        self.dy1 = bounce1.dy;
+        self.dx1 = bounce1.0;
+        self.dy1 = bounce1.1;
 
         self.draw_ball(self.x2, self.y2, self.night_ball_color);
         let bounce2 = self.update_square_and_bounce(self.x2, self.y2, self.dx2, self.dy2, self.night_color);
-        self.dx2 = bounce2.dx;
-        self.dy2 = bounce2.dy;
+        self.dx2 = bounce2.0;
+        self.dy2 = bounce2.1;
 
         let boundary1 = self.check_boundary_collision(self.x1, self.y1, self.dx1, self.dy1);
-        self.dx1 = boundary1.dx;
-        self.dy1 = boundary1.dy;
+        self.dx1 = boundary1.0;
+        self.dy1 = boundary1.1;
 
         let boundary2 = self.check_boundary_collision(self.x2, self.y2, self.dx2, self.dy2);
-        self.dx2 = boundary2.dx;
-        self.dy2 = boundary2.dy;
+        self.dx2 = boundary2.0;
+        self.dy2 = boundary2.1;
 
         self.x1 += self.dx1;
         self.y1 += self.dy1;
