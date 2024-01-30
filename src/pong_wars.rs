@@ -106,7 +106,8 @@ impl PongWars {
 
     fn draw_ball(&self, x: f64, y: f64, color: &str) {
         self.ctx.begin_path();
-        let _ = self.ctx.arc(x, y, (SQUARE_SIZE / 2) as f64, 0f64, PI * 2f64);
+        self.ctx.arc(x, y, (SQUARE_SIZE / 2) as f64, 0f64, PI * 2f64)
+            .expect("arc failed");
         self.ctx.set_fill_style(&JsValue::from_str(color));
         self.ctx.fill();
         self.ctx.close_path();
