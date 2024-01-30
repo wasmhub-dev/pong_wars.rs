@@ -1,7 +1,6 @@
-use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
+use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d, Element};
 use wasm_bindgen::prelude::*;
 use core::f64::consts::PI;
-use js_sys::Math::random;
 
 const COLOR_ARCTIC_POWDER: &'static str = "#F1F6F4";
 const COLOR_MYSTIC_MINT: &'static str = "#D9E8E3";
@@ -19,14 +18,15 @@ struct PositionDiff {
 pub struct PongWars {
     canvas: HtmlCanvasElement,
     ctx: CanvasRenderingContext2d,
+    score_element: Element,
 
-    x1: isize,
-    y1: isize,
+    x1: f64,
+    y1: f64,
     dx1: f64,
     dy1: f64,
 
-    x2: isize,
-    y2: isize,
+    x2: f64,
+    y2: f64,
     dx2: f64,
     dy2: f64,
 
@@ -41,7 +41,7 @@ pub struct PongWars {
 }
 
 impl PongWars {
-    pub fn new(canvas: HtmlCanvasElement) -> Self {
+    pub fn new(canvas: HtmlCanvasElement, score_element: Element) -> Self {
         let ctx = canvas.get_context("2d").unwrap().unwrap()
             .dyn_into::<CanvasRenderingContext2d>()
             .unwrap();
@@ -65,21 +65,20 @@ impl PongWars {
             squares.insert(i, row);
         }
 
-        let mut x1 = canvas.width() as isize / 4;
-        let mut y1 = canvas.height() as isize / 2;
-        let mut dx1 = 12.5;
-        let mut dy1 = -12.5;
+        let x1 = canvas.width() as f64 / 4f64;
+        let y1 = canvas.height() as f64 / 2f64;
+        let dx1 = 12.5;
+        let dy1 = -12.5;
     
-        let mut x2 = (canvas.width() as isize / 4) * 3;
-        let mut y2 = canvas.height() as isize / 2;
-        let mut dx2 = -12.5;
-        let mut dy2 = 12.5;
-    
-        let mut iteration = 0;
+        let x2 = (canvas.width() as f64 / 4f64) * 3f64;
+        let y2 = canvas.height() as f64 / 2f64;
+        let dx2 = -12.5;
+        let dy2 = 12.5;
 
         PongWars {
             canvas,
             ctx,
+            score_element,
             x1,
             y1,
             dx1,
@@ -98,9 +97,9 @@ impl PongWars {
         }
     }
 
-    fn draw_ball(&self, x: isize, y: isize, color: &str) {
+    fn draw_ball(&self, x: f64, y: f64, color: &str) {
         self.ctx.begin_path();
-        let _ = self.ctx.arc(x as f64, y as f64, (SQUARE_SIZE / 2) as f64, 0f64, PI * 2f64);
+        let _ = self.ctx.arc(x, y, (SQUARE_SIZE / 2) as f64, 0f64, PI * 2f64);
         self.ctx.set_fill_style(&JsValue::from_str(color));
         self.ctx.fill();
         self.ctx.close_path();
@@ -120,29 +119,26 @@ impl PongWars {
         }
     }
 
-    fn update_square_and_bounce(&mut self, x: usize, y: usize, dx: f64, dy: f64, color: &str) -> PositionDiff {
+    fn update_square_and_bounce(&mut self, x: f64, y: f64, dx: f64, dy: f64, color: &'static str) -> PositionDiff {
         let mut updated_dx = dx;
         let mut updated_dy = dy;
         let mut angle = 0f64;
         while angle < PI * 2f64 {
-            let check_x = x as f64 + angle.cos() * (SQUARE_SIZE / 2) as f64;
-            let check_y = y as f64 + angle.sin() * (SQUARE_SIZE / 2) as f64;
+            let check_x = x as f64 + (angle.cos() * (SQUARE_SIZE / 2) as f64);
+            let check_y = y as f64 + (angle.sin() * (SQUARE_SIZE / 2) as f64);
 
             let i = (check_x / SQUARE_SIZE as f64).floor() as usize;
             let j = (check_y / SQUARE_SIZE as f64).floor() as usize;
 
             if i >= 0 && i < self.num_squares_x && j >= 0 && j < self.num_squares_y {
                 if self.squares[i][j] != color {
-                    self.squares.clone()[i][j] = color;
+                    self.squares[i][j] = color;
 
                     if angle.cos().abs() > angle.sin().abs() {
                         updated_dx = -updated_dx
                     } else {
                         updated_dy = -updated_dy;
                     }
-
-                    updated_dx += self.random_num(-0.25, 0.25);
-                    updated_dy += self.random_num(-0.25, 0.25);
                 }
             }
 
@@ -156,9 +152,22 @@ impl PongWars {
     }
 
     fn update_score_element(&self) {
+        let mut day_score: usize = 0;
+        let mut night_score: usize = 0;
+        for i in 0..self.num_squares_x {
+            for j in 0..self.num_squares_y {
+                if self.squares[i][j] == self.day_color {
+                    day_score += 1;
+                } else if self.squares[i][j] == self.night_color {
+                    night_score += 1;
+                }
+            }
+        }
+        let score = format!("day {} | night {}", day_score, night_score);
+        self.score_element.set_text_content(Some(score.as_str()));
     }
 
-    fn check_boundary_collision(&mut self, x: usize, y: usize, dx: f64, dy: f64) -> PositionDiff {
+    fn check_boundary_collision(&mut self, x: f64, y: f64, dx: f64, dy: f64) -> PositionDiff {
         let mut dx = dx;
         let mut dy = dy;
         if x as f64 + dx > self.canvas.width() as f64 - SQUARE_SIZE as f64 / 2f64 || x as f64 + dx < SQUARE_SIZE as f64 / 2f64 {
@@ -180,31 +189,28 @@ impl PongWars {
         self.draw_squares();
 
         self.draw_ball(self.x1, self.y1, self.day_ball_color);
-        let bounce1 = self.update_square_and_bounce(self.x1 as usize, self.y1 as usize, self.dx1, self.dy1, self.day_color);
+        let bounce1 = self.update_square_and_bounce(self.x1, self.y1, self.dx1, self.dy1, self.day_color);
         self.dx1 = bounce1.dx;
         self.dy1 = bounce1.dy;
 
         self.draw_ball(self.x2, self.y2, self.night_ball_color);
-        let bounce2 = self.update_square_and_bounce(self.x2 as usize, self.y2 as usize, self.dx2, self.dy2, self.night_color);
+        let bounce2 = self.update_square_and_bounce(self.x2, self.y2, self.dx2, self.dy2, self.night_color);
         self.dx2 = bounce2.dx;
         self.dy2 = bounce2.dy;
 
-        let boundary1 = self.check_boundary_collision(self.x1 as usize, self.y1 as usize, self.dx1, self.dy1);
+        let boundary1 = self.check_boundary_collision(self.x1, self.y1, self.dx1, self.dy1);
         self.dx1 = boundary1.dx;
         self.dy1 = boundary1.dy;
 
-        let boundary2 = self.check_boundary_collision(self.x2 as usize, self.y2 as usize, self.dx2, self.dy2);
+        let boundary2 = self.check_boundary_collision(self.x2, self.y2, self.dx2, self.dy2);
         self.dx2 = boundary2.dx;
         self.dy2 = boundary2.dy;
 
-        self.x1 += self.dx1 as isize;
-        self.y1 += self.dy1 as isize;
-        self.x2 += self.dx2 as isize;
-        self.y2 += self.dy2 as isize;
+        self.x1 += self.dx1;
+        self.y1 += self.dy1;
+        self.x2 += self.dx2;
+        self.y2 += self.dy2;
 
         self.update_score_element();
-    }
-    fn random_num(&self, min: f64, max: f64) -> f64 {
-        random() * (max - min) + min
     }
 }
