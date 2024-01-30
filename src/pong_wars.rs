@@ -3,7 +3,7 @@ use gloo::utils::document;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d, Element};
 use wasm_bindgen::prelude::*;
 use core::f64::consts::PI;
-use crate::animation::Draw;
+use crate::animation::Drawable;
 
 const COLOR_ARCTIC_POWDER: &'static str = "#F1F6F4";
 const COLOR_MYSTIC_MINT: &'static str = "#D9E8E3";
@@ -187,7 +187,7 @@ impl PongWars {
     }
 }
 
-impl Draw for PongWars {
+impl Drawable for PongWars {
     fn draw(&mut self) {
         self.ctx.clear_rect(0f64, 0f64, self.canvas.width() as f64, self.canvas.height() as f64);
         self.draw_squares();

@@ -4,17 +4,17 @@ use gloo::utils::window;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::prelude::*;
 
-pub trait Draw {
+pub trait Drawable {
     fn draw(&mut self);
 }
 
-pub fn recursive_draw(mut pong_wars: impl Draw + 'static) {
+pub fn recursive_draw(mut drawable: impl Drawable + 'static) {
 
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
 
     *g.borrow_mut() = Some(Closure::new(move || {
-        pong_wars.draw();
+        drawable.draw();
         request_animation_frame_safe(f.borrow().as_ref().unwrap());
     }));
 
