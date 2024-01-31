@@ -1,5 +1,8 @@
 # Pong Wars
 
+## Live
+- https://wasmhub.dev/pong_wars.rs/
+
 ## Development
 
 Run:
