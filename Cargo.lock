@@ -447,8 +447,6 @@ name = "pong_wars"
 version = "0.1.0"
 dependencies = [
  "gloo",
- "gloo-events",
- "js-sys",
  "wasm-bindgen",
  "web-sys",
 ]
