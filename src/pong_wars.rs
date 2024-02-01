@@ -8,7 +8,7 @@ use web_sys::{CanvasRenderingContext2d, Element, HtmlCanvasElement};
 const COLOR_ARCTIC_POWDER: &'static str = "#F1F6F4";
 const COLOR_MYSTIC_MINT: &'static str = "#D9E8E3";
 const COLOR_FORSYTHIA: &'static str = "#FFC801";
-const COLOR_DEEP_SAFRON: &'static str = "#FF9932";
+const COLOR_DEEP_SAFFRON: &'static str = "#FF9932";
 const COLOR_NOCTURNAL_EXPEDITION: &'static str = "#114C5A";
 const COLOR_OCEANIC_NOIR: &'static str = "#172B36";
 const SQUARE_SIZE: f64 = 25f64;
@@ -71,16 +71,20 @@ impl PongWars {
 
         for i in 0..num_squares_x {
             let mut row: Vec<&str> = vec![];
-            for y in 0..num_squares_y {
+
+            let color = if i < (num_squares_x / 2) {
+                day_color
+            } else {
+                night_color
+            };
+
+            for j in 0..num_squares_y {
                 row.insert(
-                    y,
-                    if i < (num_squares_x / 2) {
-                        day_color
-                    } else {
-                        night_color
-                    },
+                    j,
+                    color,
                 );
-            }
+            };
+
             squares.insert(i, row);
         }
 
