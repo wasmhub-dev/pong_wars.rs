@@ -3,7 +3,8 @@ use crate::animation::Drawable;
 use core::f64::consts::PI;
 use gloo::utils::document;
 use wasm_bindgen::prelude::*;
-use web_sys::{CanvasRenderingContext2d, Element, HtmlCanvasElement};
+use web_sys::{js_sys::Math::abs, CanvasRenderingContext2d, Element, HtmlCanvasElement};
+use rand::prelude::*;
 
 const COLOR_ARCTIC_POWDER: &'static str = "#F1F6F4";
 const COLOR_MYSTIC_MINT: &'static str = "#D9E8E3";
@@ -13,30 +14,37 @@ const COLOR_NOCTURNAL_EXPEDITION: &'static str = "#114C5A";
 const COLOR_OCEANIC_NOIR: &'static str = "#172B36";
 const SQUARE_SIZE: f64 = 25f64;
 
+const MIN_SPEED: f64 = 5f64;
+const MAX_SPEED: f64 = 25f64;
+
+
+#[derive(Clone, Debug)]
+struct Ball {
+    x: f64,
+    y: f64,
+    dx: f64,
+    dy: f64,
+    reverse_color: &'static str,
+    ball_color: &'static str,
+}
+
 #[derive(Clone, Debug)]
 pub struct PongWars {
     canvas: HtmlCanvasElement,
     ctx: CanvasRenderingContext2d,
     score_element: Element,
 
-    x1: f64,
-    y1: f64,
-    dx1: f64,
-    dy1: f64,
-
-    x2: f64,
-    y2: f64,
-    dx2: f64,
-    dy2: f64,
-
     day_color: &'static str,
     day_ball_color: &'static str,
     night_color: &'static str,
     night_ball_color: &'static str,
+
     num_squares_x: usize,
     num_squares_y: usize,
 
     squares: Vec<Vec<&'static str>>,
+
+    balls: Vec<Ball>,
 }
 
 impl PongWars {
@@ -69,6 +77,25 @@ impl PongWars {
 
         let mut squares: Vec<Vec<&'static str>> = vec![];
 
+        let balls = vec![
+            Ball {
+                x: canvas.width() as f64 / 4f64,
+                y: canvas.height() as f64 / 2f64,
+                dx: 12.5f64,
+                dy: -12.5f64,
+                reverse_color: day_color,
+                ball_color: day_ball_color,
+            },
+            Ball {
+                x: (canvas.width() as f64 / 4f64) * 3f64,
+                y: canvas.height() as f64 / 2f64,
+                dx: -12.5f64,
+                dy: 12.5f64,
+                reverse_color: night_color,
+                ball_color: night_ball_color,
+            },
+        ];
+
         for i in 0..num_squares_x {
             let mut row: Vec<&str> = vec![];
 
@@ -88,28 +115,10 @@ impl PongWars {
             squares.insert(i, row);
         }
 
-        let x1 = canvas.width() as f64 / 4f64;
-        let y1 = canvas.height() as f64 / 2f64;
-        let dx1 = 12.5;
-        let dy1 = -12.5;
-
-        let x2 = (canvas.width() as f64 / 4f64) * 3f64;
-        let y2 = canvas.height() as f64 / 2f64;
-        let dx2 = -12.5;
-        let dy2 = 12.5;
-
         PongWars {
             canvas,
             ctx,
             score_element,
-            x1,
-            y1,
-            dx1,
-            dy1,
-            x2,
-            y2,
-            dx2,
-            dy2,
             day_color,
             day_ball_color,
             night_color,
@@ -117,15 +126,17 @@ impl PongWars {
             num_squares_x,
             num_squares_y,
             squares,
+            balls,
         }
     }
 
-    fn draw_ball(&self, x: f64, y: f64, color: &str) {
+    fn draw_ball(&self, ball_index: usize) {
+        let ball = self.balls.get(ball_index).unwrap();
         self.ctx.begin_path();
         self.ctx
-            .arc(x, y, SQUARE_SIZE / 2f64, 0f64, PI * 2f64)
+            .arc(ball.x, ball.y, SQUARE_SIZE / 2f64, 0f64, PI * 2f64)
             .expect("arc failed");
-        self.ctx.set_fill_style(&JsValue::from_str(color));
+        self.ctx.set_fill_style(&JsValue::from_str(ball.ball_color));
         self.ctx.fill();
         self.ctx.close_path();
     }
@@ -145,41 +156,34 @@ impl PongWars {
         }
     }
 
-    fn update_square_and_bounce(
+    fn check_square_collision(
         &mut self,
-        x: f64,
-        y: f64,
-        dx: f64,
-        dy: f64,
-        color: &'static str,
-    ) -> (f64, f64) {
-        let mut updated_dx = dx;
-        let mut updated_dy = dy;
+        ball_index: usize,
+    ) {
+        let ball = self.balls.get_mut(ball_index).unwrap();
         let mut angle = 0f64;
 
         while angle < PI * 2f64 {
-            let check_x = x + (angle.cos() * SQUARE_SIZE / 2f64);
-            let check_y = y + (angle.sin() * SQUARE_SIZE / 2f64);
+            let check_x = ball.x + (angle.cos() * SQUARE_SIZE / 2f64);
+            let check_y = ball.y + (angle.sin() * SQUARE_SIZE / 2f64);
 
             let i = (check_x / SQUARE_SIZE).floor() as usize;
             let j = (check_y / SQUARE_SIZE).floor() as usize;
 
             if i < self.num_squares_x && j < self.num_squares_y {
-                if self.squares[i][j] != color {
-                    self.squares[i][j] = color;
+                if self.squares[i][j] != ball.reverse_color {
+                    self.squares[i][j] = ball.reverse_color;
 
                     if angle.cos().abs() > angle.sin().abs() {
-                        updated_dx = -updated_dx
+                        ball.dx = -ball.dx;
                     } else {
-                        updated_dy = -updated_dy;
+                        ball.dy = -ball.dy;
                     }
                 }
             }
 
             angle += PI / 4f64;
         }
-
-        (updated_dx, updated_dy)
     }
 
     fn update_score_element(&self) {
@@ -198,24 +202,41 @@ impl PongWars {
         self.score_element.set_text_content(Some(score.as_str()));
     }
 
-    fn check_boundary_collision(&mut self, x: f64, y: f64, dx: f64, dy: f64) -> (f64, f64) {
-        let mut dx = dx;
-        let mut dy = dy;
-
+    fn check_boundary_collision(&mut self, ball_index: usize) {
+        let ball = self.balls.get_mut(ball_index).unwrap();
         let width = self.canvas.width() as f64;
         let height = self.canvas.height() as f64;
-
-        let square_half = SQUARE_SIZE / 2f64;
-
-        if x + dx > width - square_half || x + dx < square_half {
-            dx = -dx;
+        if ball.x + ball.dx > width - (SQUARE_SIZE / 2f64) || ball.x + ball.dx < SQUARE_SIZE / 2f64 {
+            ball.dx = -ball.dx;
         }
 
-        if y + dy > height - square_half || y + dy < square_half {
-            dy = -dy;
+        if ball.y + ball.dy > height - (SQUARE_SIZE / 2f64) || ball.y + ball.dy < SQUARE_SIZE / 2f64 {
+            ball.dy = -ball.dy;
+        }
+    }
+
+    fn add_randomness(&mut self, ball_index: usize) {
+        let ball = self.balls.get_mut(ball_index).unwrap();
+        let mut rng = rand::thread_rng();
+        ball.dx += rng.gen::<f64>() * 0.01f64 - 0.005f64;
+        ball.dy += rng.gen::<f64>() * 0.01f64 - 0.005f64;
+
+        ball.dx = f64::min(f64::max(ball.dx, -MAX_SPEED), MAX_SPEED);
+        ball.dy = f64::min(f64::max(ball.dy, -MAX_SPEED), MAX_SPEED);
+
+        if abs(ball.dx) < MIN_SPEED {
+            ball.dx = if ball.dx > 0f64 { MIN_SPEED } else { -MIN_SPEED };
         }
 
-        (dx, dy)
+        if abs(ball.dy) < MIN_SPEED {
+            ball.dy = if ball.dy > 0f64 { MIN_SPEED } else { -MIN_SPEED };
+        }
+    }
+
+    fn update_ball(&mut self, ball_index: usize) {
+        let ball = self.balls.get_mut(ball_index).unwrap();
+        ball.x += ball.dx;
+        ball.y += ball.dy;
     }
 }
 
@@ -227,31 +248,17 @@ impl Drawable for PongWars {
             self.canvas.width() as f64,
             self.canvas.height() as f64,
         );
+
         self.draw_squares();
 
-        self.draw_ball(self.x1, self.y1, self.day_ball_color);
-        let bounce1 = self.update_square_and_bounce(self.x1, self.y1, self.dx1, self.dy1, self.day_color);
-        self.dx1 = bounce1.0;
-        self.dy1 = bounce1.1;
-
-        self.draw_ball(self.x2, self.y2, self.night_ball_color);
-        let bounce2 = self.update_square_and_bounce(self.x2, self.y2, self.dx2, self.dy2, self.night_color);
-        self.dx2 = bounce2.0;
-        self.dy2 = bounce2.1;
-
-        let boundary1 = self.check_boundary_collision(self.x1, self.y1, self.dx1, self.dy1);
-        self.dx1 = boundary1.0;
-        self.dy1 = boundary1.1;
-
-        let boundary2 = self.check_boundary_collision(self.x2, self.y2, self.dx2, self.dy2);
-        self.dx2 = boundary2.0;
-        self.dy2 = boundary2.1;
-
-        self.x1 += self.dx1;
-        self.y1 += self.dy1;
-        self.x2 += self.dx2;
-        self.y2 += self.dy2;
-
-        self.update_score_element();
+        for i in 0..self.balls.len() {
+            self.draw_ball(i);
+            self.check_square_collision(i);
+            self.check_boundary_collision(i);
+    
+            self.update_ball(i);
+    
+            self.add_randomness(i);
+        }
     }
 }
