@@ -17,6 +17,9 @@ const SQUARE_SIZE: f64 = 25f64;
 const MIN_SPEED: f64 = 5f64;
 const MAX_SPEED: f64 = 25f64;
 
+const DAY_COLOR: &'static str = COLOR_MYSTIC_MINT;
+const NIGHT_COLOR: &'static str = COLOR_NOCTURNAL_EXPEDITION;
+
 
 #[derive(Clone, Debug)]
 struct Ball {
@@ -33,11 +36,6 @@ pub struct PongWars {
     canvas: HtmlCanvasElement,
     ctx: CanvasRenderingContext2d,
     score_element: Element,
-
-    day_color: &'static str,
-    day_ball_color: &'static str,
-    night_color: &'static str,
-    night_ball_color: &'static str,
 
     num_squares_x: usize,
     num_squares_y: usize,
@@ -119,10 +117,6 @@ impl PongWars {
             canvas,
             ctx,
             score_element,
-            day_color,
-            day_ball_color,
-            night_color,
-            night_ball_color,
             num_squares_x,
             num_squares_y,
             squares,
@@ -191,9 +185,9 @@ impl PongWars {
         let mut night_score: usize = 0;
         for i in 0..self.num_squares_x {
             for j in 0..self.num_squares_y {
-                if self.squares[i][j] == self.day_color {
+                if self.squares[i][j] == DAY_COLOR {
                     day_score += 1;
-                } else if self.squares[i][j] == self.night_color {
+                } else if self.squares[i][j] == NIGHT_COLOR {
                     night_score += 1;
                 }
             }
