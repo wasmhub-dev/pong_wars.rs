@@ -211,7 +211,7 @@ impl PongWars {
 
     fn add_randomness(&mut self, ball_index: usize) {
         let ball = self.balls.get_mut(ball_index).unwrap();
-        let mut rng = rand::thread_rng();
+        let mut rng = thread_rng();
         ball.dx += rng.gen::<f64>() * 0.01f64 - 0.005f64;
         ball.dy += rng.gen::<f64>() * 0.01f64 - 0.005f64;
 
