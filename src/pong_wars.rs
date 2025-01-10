@@ -130,7 +130,7 @@ impl PongWars {
         self.ctx
             .arc(ball.x, ball.y, SQUARE_SIZE / 2f64, 0f64, PI * 2f64)
             .expect("arc failed");
-        self.ctx.set_fill_style(&JsValue::from_str(ball.ball_color));
+        self.ctx.set_fill_style_str(ball.ball_color);
         self.ctx.fill();
         self.ctx.close_path();
     }
@@ -139,7 +139,7 @@ impl PongWars {
         for i in 0..self.num_squares_x {
             for j in 0..self.num_squares_y {
                 let color = self.squares[i][j];
-                self.ctx.set_fill_style(&JsValue::from_str(color));
+                self.ctx.set_fill_style_str(color);
                 self.ctx.fill_rect(
                     i as f64 * SQUARE_SIZE,
                     j as f64 * SQUARE_SIZE,
