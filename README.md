@@ -6,7 +6,11 @@ cell it touches, fighting for territory in real time.
 
 ## Demo
 
-<video src="assets/demo.mp4" autoplay loop muted playsinline width="400"></video>
+<p align="center">
+  <video width="400" autoplay loop muted playsinline poster="assets/demo-poster.jpg">
+    <source src="assets/demo.mp4" type="video/mp4">
+  </video>
+</p>
 
 ## Live
 - https://wasmhub.dev/pong_wars.rs/
