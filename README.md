@@ -7,9 +7,7 @@ cell it touches, fighting for territory in real time.
 ## Demo
 
 <p align="center">
-  <video width="400" autoplay loop muted playsinline poster="assets/demo-poster.jpg">
-    <source src="assets/demo.mp4" type="video/mp4">
-  </video>
+  <img src="assets/demo.gif" alt="Pong Wars demo" width="400">
 </p>
 
 ## Live
